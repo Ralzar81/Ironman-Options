@@ -1,0 +1,20 @@
+{
+    "ModTitle": "Ironman Options",
+    "ModVersion": "1.0",
+    "ModAuthor": "Ralzar",
+    "ContactInfo": "www.dfworkshop.net",
+    "DFUnity_Version": "0.11.5",
+    "ModDescription": "Limits the ways you can save and optionally deletes save on death.",
+    "GUID": "dc2e15c5-35f9-4018-aba4-1c0fdac7690e",
+    "Files": [
+        "Assets/Game/Mods/Ironman Options/IronmanOptions.cs",
+        "Assets/Game/Mods/Ironman Options/modsettings.json"
+    ],
+        "Dependencies": [
+        {
+            "Name": "traveloptions",
+            "IsOptional": false,
+            "IsPeer": false
+        }
+    ]
+}

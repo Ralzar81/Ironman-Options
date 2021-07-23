@@ -1,0 +1,54 @@
+{
+    "Version": "1.0",
+    "Sections": [
+        {
+            "Name": "Dungeon",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Options": [
+                    "Ironman Only",
+                    "Enter/Exit Dungeon",
+                    "Fully Healed Rest",
+                    "Click use on Fireplace or Campfire"
+                    ],
+                    "Value": 0,
+                    "Name": "WhenToSave",
+                    "Description": "When, if ever, should the mod use Quicksave to make a save outside the Ironman system?",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+            ],
+            "$version": "v1"
+        },
+        {
+            "Name": " ",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [],
+            "$version": "v1"
+        },
+        {
+            "Name": "Outside",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Options": [
+                    "Ironman Only",
+                    "Enter/Exit Town",
+                    "Fully Healed Rest",
+                    "Click use on Fireplace or Campfire"
+                    ],
+                    "Value": 2,
+                    "Name": "WhenToSave",
+                    "Description": "When, if ever, should the mod use Quicksave to make a save outside the Ironman system?",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+            ],
+            "$version": "v1"
+        },
+    ]
+}
