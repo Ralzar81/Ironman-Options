@@ -146,9 +146,9 @@ namespace IronmanOptions
 
         public static void CampingSave(RaycastHit hit)
         {
-            if (CampingDungeon && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
+            if (CampingDungeon && !GameManager.Instance.AreEnemiesNearby(true) && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
                 SaveGame("Ironman Permanent");
-            else if (CampingOutside)
+            else if (CampingOutside && !GameManager.Instance.AreEnemiesNearby(true))
                 SaveGame("Ironman Permanent");
         }
 
