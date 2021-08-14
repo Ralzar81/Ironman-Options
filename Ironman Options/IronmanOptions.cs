@@ -4,35 +4,38 @@
 // Author:          Ralzar
 
 using DaggerfallWorkshop.Game;
-using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.Utility.ModSupport;
 using UnityEngine;
-using DaggerfallWorkshop;
-using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings;
 using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallWorkshop.Game.MagicAndEffects;
 using DaggerfallWorkshop.Game.Entity;
-using DaggerfallConnect.Utility;
+using DaggerfallWorkshop.Game.Utility;
+using System;
 
 namespace IronmanOptions
 {
     public class IronmanOptions : MonoBehaviour
     {
         static Mod mod;
-        static bool EnterExitDungeon = false;
-        static bool FullRestDungeon = false;
-        static bool CampingDungeon = false;
-        static bool EnterExitOutside = false;
-        static bool FullRestOutside = false;
-        static bool CampingOutside = false;
-        static bool SavingPossible = false;
-        static int SaveCounter = 0;
+        static bool enterExitDungeon = false;
+        static bool fullRestDungeon = false;
+        static bool campingDungeon = false;
+        static bool enterExitOutside = false;
+        static bool fullRestOutside = false;
+        static bool campingOutside = false;
+        static bool ironmanSaves = true;
+        static bool startSave = true;
+        static bool savingStart = false;
+        static bool savingPossible = false;
+        static int saveCounter = 0;
         static bool travelOptionsRunning = false;
-        static bool Resting = false;
-
+        static bool resting = false;
+        static bool gameStart = false;
+        static KeyCode mainMenuKey = KeyCode.Escape;
         static PlayerEnterExit playerEnterExit = GameManager.Instance.PlayerEnterExit;
         static PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
+
 
         [Invoke(StateManager.StateTypes.Start, 0)]
         public static void Init(InitParams initParams)
@@ -40,38 +43,45 @@ namespace IronmanOptions
             mod = initParams.Mod;
             ModSettings settings = mod.GetSettings();
 
-            EnterExitDungeon = settings.GetValue<int>("Dungeon", "WhenToSave") == 1 ? true : false;
+            ironmanSaves = settings.GetValue<bool>("General", "IronmanSaves");
+            startSave = settings.GetValue<bool>("General", "StartSave");
+            StartGameBehaviour.OnStartGame += StartDetection_OnStartGame;
 
-            switch (settings.GetValue<int>("Dungeon", "WhenToSave"))
+            if (startSave)
             {
-                case 1:
-                    EnterExitDungeon = true;
-                    break;
-                case 2:
-                    FullRestDungeon = true;
-                    break;
-                case 3:
-                    CampingDungeon = true;
-                    break;
-            }
-            switch (settings.GetValue<int>("Outside", "WhenToSave"))
-            {
-                case 1:
-                    EnterExitOutside = true;
-                    break;
-                case 2:
-                    FullRestOutside = true;
-                    break;
-                case 3:
-                    CampingOutside = true;
-                    break;
+                StartGameBehaviour.OnStartGame += StartSave_OnStartGame;
             }
 
-            if (EnterExitDungeon)
+            switch (settings.GetValue<int>("DungeonPermanentSave", "WhenToSave"))
+            {
+                case 1:
+                    enterExitDungeon = true;
+                    break;
+                case 2:
+                    fullRestDungeon = true;
+                    break;
+                case 3:
+                    campingDungeon = true;
+                    break;
+            }
+            switch (settings.GetValue<int>("OutsidePermanentSave", "WhenToSave"))
+            {
+                case 1:
+                    enterExitOutside = true;
+                    break;
+                case 2:
+                    fullRestOutside = true;
+                    break;
+                case 3:
+                    campingOutside = true;
+                    break;
+            }
+
+            if (enterExitDungeon)
                 PlayerEnterExit.OnPreTransition += EnterExitDungeon_OnPreTransition;
-            if (EnterExitOutside)
-                PlayerGPS.OnMapPixelChanged += EnterExitSave_OnMapPixelChanged;
-            if (CampingDungeon || CampingOutside)
+            if (enterExitOutside)
+                PlayerEnterExit.OnPreTransition += EnterExitHouse_OnPreTransition;
+            if (campingDungeon || campingOutside)
             {
                 PlayerActivate.RegisterCustomActivation(mod, 101, 0, CampingSave);
                 PlayerActivate.RegisterCustomActivation(mod, 101, 5, CampingSave);
@@ -84,71 +94,121 @@ namespace IronmanOptions
 
             var go = new GameObject(mod.Title);
             go.AddComponent<IronmanOptions>();
-
             EntityEffectBroker.OnNewMagicRound += IronmanSaving_OneNewMagicRound;
             playerEntity.OnDeath += DeleteSave;
-            SaveLoadManager.Instance.RegisterPreventSaveCondition(() => !SavingPossible);
-
+            SaveLoadManager.Instance.RegisterPreventSaveCondition(() => !savingPossible);
+            mainMenuKey = InputManager.Instance.GetBinding(InputManager.Actions.Escape);
             mod.IsReady = true;
+        }
+
+        void Update()
+        {
+            if (!InputManager.Instance.IsPaused && InputManager.Instance.GetKeyDown(mainMenuKey))
+                escSave();
+
+            if (savingStart)
+            {
+                if (!GameManager.IsGamePaused)
+                {
+                    savingStart = false;
+                    StartSave();
+                }
+            }
+
+            if (gameStart)
+            {
+                if (!GameManager.IsGamePaused)
+                {
+                    gameStart = false;
+                    if (enterExitDungeon)
+                        SaveGame("Ironman Permanent");
+                }
+            }
+        }
+
+        static void StartSave_OnStartGame(object sender, EventArgs e)
+        {
+            savingStart = true;
+        }
+
+        static void StartDetection_OnStartGame(object sender, EventArgs e)
+        {
+            gameStart = true;
+        }
+
+        static void escSave()
+        {
+            //Possible alternate coding for this where it does not make a save upon Exit Game if you use one of the other save options instead of default Ironman.
+            //if (playerEnterExit.IsPlayerInside && !enterExitDungeon && !fullRestDungeon && !campingDungeon)
+            //    SaveGame("Ironman");
+            //else if (!playerEnterExit.IsPlayerInside && !enterExitOutside && !fullRestOutside && !campingOutside)
+            //    SaveGame("Ironman");
+            SaveGame("Ironman");
+        }
+
+        static void StartSave()
+        {
+            PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
+            string saveName = "Start Save";
+            GameManager.Instance.SaveLoadManager.Save(playerEntity.Name, saveName);
         }
 
         static void IronmanSaving_OneNewMagicRound()
         {
-            if (!SaveLoadManager.Instance.LoadInProgress && !DaggerfallUI.Instance.FadeBehaviour.FadeInProgress && GameManager.Instance.IsPlayerOnHUD && !playerEntity.InPrison && !playerEntity.Arrested)
+            if (ironmanSaves && !SaveLoadManager.Instance.LoadInProgress && !DaggerfallUI.Instance.FadeBehaviour.FadeInProgress && GameManager.Instance.IsPlayerOnHUD && !playerEntity.InPrison && !playerEntity.Arrested)
             {
+                mainMenuKey = InputManager.Instance.GetBinding(InputManager.Actions.Escape);
                 ModManager.Instance.SendModMessage("TravelOptions", "isTravelActive", null, (string message, object data) =>
                 {
                     travelOptionsRunning = (bool)data;
                 });
                 if (!travelOptionsRunning)
                 {
-                    SaveCounter++;
-                    Debug.Log("[Ironman Options] SaveCounter = " + SaveCounter.ToString());
-                    if (SaveCounter > 10)
+                    saveCounter++;
+                    if (saveCounter >= 60)
                     {
-                        SaveCounter = 0;
+                        saveCounter = 0;
                         SaveGame("Ironman");
                     }
                 }
             }
-            else
-            {
-                Debug.Log("[Ironman Options] SaveCounter not counting down.");
-            }
 
             if (playerEntity.IsResting)
-                Resting = true;
-            else if (Resting && !playerEntity.IsResting && playerEntity.CurrentHealth == playerEntity.MaxHealth)
+                resting = true;
+            else if (resting && !playerEntity.IsResting && playerEntity.CurrentHealth == playerEntity.MaxHealth)
             {
-                if (FullRestDungeon && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
+                if (GameManager.Instance.AreEnemiesNearby(true))
+                {
+                    DaggerfallUI.AddHUDText("Enemies Nearby");
+                }
+                else if (fullRestDungeon && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
                     SaveGame("Ironman Permanent");
-                if (FullRestOutside && (!playerEnterExit.IsPlayerInside || playerEnterExit.IsPlayerInsideBuilding))
+                else if (fullRestOutside && (!playerEnterExit.IsPlayerInside || playerEnterExit.IsPlayerInsideBuilding))
                     SaveGame("Ironman Permanent");
-                Resting = false;
+                resting = false;
             }
         }
 
         private static void EnterExitDungeon_OnPreTransition(PlayerEnterExit.TransitionEventArgs args)
         {
-            SaveGame("Ironman Permanent");
+            if (!gameStart)
+                SaveGame("Ironman Permanent");
         }
 
-        private static void EnterExitSave_OnMapPixelChanged(DFPosition mapPixel)
+        private static void EnterExitHouse_OnPreTransition(PlayerEnterExit.TransitionEventArgs args)
         {
-            if (!SaveLoadManager.Instance.LoadInProgress && !DaggerfallUI.Instance.FadeBehaviour.FadeInProgress && GameManager.Instance.IsPlayerOnHUD && !playerEntity.InPrison && !playerEntity.Arrested)
-            {
-                if (GameManager.Instance.PlayerGPS.IsPlayerInTown())
-                {
-                    SaveGame("Ironman Permanent");
-                }
-            }
+            SaveGame("Ironman Permanent");
         }
 
         public static void CampingSave(RaycastHit hit)
         {
-            if (CampingDungeon && !GameManager.Instance.AreEnemiesNearby(true) && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
+            if (GameManager.Instance.AreEnemiesNearby(true))
+            {
+                DaggerfallUI.AddHUDText("Enemies Nearby");
+            }
+            else if (campingDungeon && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
                 SaveGame("Ironman Permanent");
-            else if (CampingOutside && !GameManager.Instance.AreEnemiesNearby(true))
+            else if (campingOutside && !GameManager.Instance.AreEnemiesNearby(true))
                 SaveGame("Ironman Permanent");
         }
 

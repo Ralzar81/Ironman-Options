@@ -2,23 +2,25 @@
     "Version": "1.0",
     "Sections": [
         {
-            "Name": "Dungeon",
+            "Name": "General",
             "Description": null,
             "IsAdvanced": false,
-            "Keys": [
+            "Keys":
+            [
                 {
-                    "Options": [
-                    "Ironman Only",
-                    "Enter/Exit Dungeon",
-                    "Fully Healed Rest",
-                    "Click use on Fireplace or Campfire"
-                    ],
-                    "Value": 0,
-                    "Name": "WhenToSave",
-                    "Description": "When, if ever, should the mod use Quicksave to make a save outside the Ironman system?",
+                    "Value": true,
+                    "Name": "StartSave",
+                    "Description": "Creates a permanent save after character creation.",
                     "$version": "v1",
-                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
                 },
+                {
+                    "Value": false,
+                    "Name": "IronmanSaves",
+                    "Description": "Creates/updates a save every 5 minutes that gets deleted on death.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
+                },                
             ],
             "$version": "v1"
         },
@@ -30,20 +32,55 @@
             "$version": "v1"
         },
         {
-            "Name": "Outside",
+            "Name": "  ",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [],
+            "$version": "v1"
+        },
+        {
+            "Name": "DungeonPermanentSave",
             "Description": null,
             "IsAdvanced": false,
             "Keys": [
                 {
                     "Options": [
-                    "Ironman Only",
-                    "Enter/Exit Town",
-                    "Fully Healed Rest",
-                    "Click use on Fireplace or Campfire"
+                    "Never",
+                    "Enter/Exit Dungeon",
+                    "Fully Healed Rest with no enemies nearby",
+                    "Click 'use' on Fireplace/Campfire with no enemies nearby"
                     ],
-                    "Value": 2,
+                    "Value": 0,
                     "Name": "WhenToSave",
-                    "Description": "When, if ever, should the mod use Quicksave to make a save outside the Ironman system?",
+                    "Description": "When, if ever, should the mod create/update a permanent save that is not deleted on death?",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+            ],
+            "$version": "v1"
+        },
+        {
+            "Name": "   ",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [],
+            "$version": "v1"
+        },
+        {
+            "Name": "OutsidePermanentSave",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Options": [
+                    "Never",
+                    "Enter/Exit Houses",
+                    "Fully Healed Rest with no enemies nearby",
+                    "Click 'use' on Fireplace/Campfire with no enemies nearby"
+                    ],
+                    "Value": 0,
+                    "Name": "WhenToSave",
+                    "Description": "When, if ever, should the mod create/update a permanent save that is not deleted on death?",
                     "$version": "v1",
                     "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
                 },
