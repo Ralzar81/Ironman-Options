@@ -12,6 +12,8 @@ using DaggerfallWorkshop.Game.MagicAndEffects;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Utility;
 using System;
+using System.Text.RegularExpressions;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
 
 namespace IronmanOptions
 {
@@ -25,6 +27,10 @@ namespace IronmanOptions
         public const string CAMP_SAVE = "campSave";
         static string ironmanSave = "Ironman";
         static string permanentSave = "Ironman Permanent";
+        static bool livesSystem = false;
+        static int startLives = 0;
+        static int maxLives = 0;
+        static bool levelUp1up = false;
         static bool enterExitDungeon = false;
         static bool fullRestDungeon = false;
         static bool campingDungeon = false;
@@ -39,9 +45,11 @@ namespace IronmanOptions
         static bool travelOptionsRunning = false;
         static bool resting = false;
         static bool gameStart = false;
+        static bool leveling = false;
         static KeyCode mainMenuKey = KeyCode.Escape;
         static PlayerEnterExit playerEnterExit = GameManager.Instance.PlayerEnterExit;
         static PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
+        static SaveLoadManager saveLoadManager = GameManager.Instance.SaveLoadManager;
 
 
         [Invoke(StateManager.StateTypes.Start, 0)]
@@ -86,6 +94,14 @@ namespace IronmanOptions
                     campingOutside = true;
                     break;
             }
+
+            livesSystem = settings.GetValue<bool>("PermanentSaveLives", "LivesSystem");
+            if (livesSystem)
+            {
+                startLives = settings.GetValue<int>("PermanentSaveLives", "StartingLives");
+                maxLives = settings.GetValue<int>("PermanentSaveLives", "MaxLives");
+                levelUp1up = settings.GetValue<bool>("PermanentSaveLives", "LevelUpExtraLife");
+            }            
 
             if (enterExitDungeon)
                 PlayerEnterExit.OnPreTransition += EnterExitDungeon_OnPreTransition;
@@ -133,9 +149,19 @@ namespace IronmanOptions
                 if (!GameManager.IsGamePaused)
                 {
                     gameStart = false;
-                    if (enterExitDungeon)
+                    if (enterExitDungeon || livesSystem)
                         SaveGame(permanentSave);
                 }
+            }
+
+            if (levelUp1up && playerEntity.ReadyToLevelUp)
+            {
+                leveling = true;
+            }
+            else if (levelUp1up && leveling && GameManager.Instance.IsPlayingGame())
+            {
+                leveling = false;
+                GainLife();
             }
         }
 
@@ -151,11 +177,6 @@ namespace IronmanOptions
 
         static void escSave()
         {
-            //Possible alternate coding for this where it does not make a save upon Exit Game if you use one of the other save options instead of default Ironman.
-            //if (playerEnterExit.IsPlayerInside && !enterExitDungeon && !fullRestDungeon && !campingDungeon)
-            //    SaveGame("Ironman");
-            //else if (!playerEnterExit.IsPlayerInside && !enterExitOutside && !fullRestOutside && !campingOutside)
-            //    SaveGame("Ironman");
             SaveGame(ironmanSave);
         }
 
@@ -163,7 +184,7 @@ namespace IronmanOptions
         {
             PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
             string saveName = "Start Save";
-            GameManager.Instance.SaveLoadManager.Save(playerEntity.Name, saveName);
+            saveLoadManager.Save(playerEntity.Name, saveName);
         }
 
         static void IronmanSaving_OneNewMagicRound()
@@ -192,12 +213,13 @@ namespace IronmanOptions
             {
                 if (GameManager.Instance.AreEnemiesNearby(true))
                 {
-                    DaggerfallUI.AddHUDText("Enemies Nearby");
+                    
                 }
                 else if (fullRestDungeon && (playerEnterExit.IsPlayerInsideDungeon || playerEnterExit.IsPlayerInsideDungeonCastle || playerEnterExit.IsPlayerInsideSpecialArea))
                     SaveGame(permanentSave);
                 else if (fullRestOutside && (!playerEnterExit.IsPlayerInside || playerEnterExit.IsPlayerInsideBuilding))
                     SaveGame(permanentSave);
+
                 resting = false;
             }
         }
@@ -215,11 +237,7 @@ namespace IronmanOptions
 
         public static void FireClicked(RaycastHit hit)
         {
-            if (GameManager.Instance.AreEnemiesNearby(true))
-            {
-                DaggerfallUI.AddHUDText("Enemies Nearby");
-            }
-            else
+            if (!GameManager.Instance.AreEnemiesNearby(true))
             {
                 CampSave();
             }
@@ -236,15 +254,92 @@ namespace IronmanOptions
         private static void SaveGame(string saveName)
         {
             Debug.Log("Game saved with string " + saveName.ToString());
-            GameManager.Instance.SaveLoadManager.EnumerateSaves();
-            GameManager.Instance.SaveLoadManager.Save(GameManager.Instance.PlayerEntity.Name, saveName);
+            saveLoadManager.EnumerateSaves();
+            if (livesSystem && saveName == permanentSave)
+            {
+                int life = startLives;
+                int[] saveKeys = saveLoadManager.GetCharacterSaveKeys(playerEntity.Name);
+                foreach (int key in saveKeys)
+                {
+                    string name = saveLoadManager.GetSaveInfo(key).saveName;
+                    if (name.Contains(permanentSave))
+                    {
+                        if (name != permanentSave)
+                            life = int.Parse(Regex.Match(name, @"\d+").Value);
+                        if (life > maxLives && maxLives != 0)
+                            life = maxLives;
+                        saveLoadManager.EnumerateSaves();
+                        saveLoadManager.DeleteSaveFolder(key);
+                    }
+                }
+                saveLoadManager.EnumerateSaves();
+                saveLoadManager.Save(playerEntity.Name, permanentSave + " " + life.ToString());
+            }
+            else
+                saveLoadManager.Save(playerEntity.Name, saveName);
         }
 
         private static void DeleteSave(DaggerfallEntity entity)
         {
             Debug.Log("Deleting Ironman save.");
-            int key = GameManager.Instance.SaveLoadManager.FindSaveFolderByNames(playerEntity.Name, "Ironman");
-            GameManager.Instance.SaveLoadManager.DeleteSaveFolder(key);
+            int key = saveLoadManager.FindSaveFolderByNames(playerEntity.Name, ironmanSave);
+            saveLoadManager.DeleteSaveFolder(key);
+            if (livesSystem)
+                LoseLife();
+        }
+
+        private static void LoseLife()
+        {
+            Debug.Log("Counting down life");
+            saveLoadManager.EnumerateSaves();
+            int[] saveKeys = saveLoadManager.GetCharacterSaveKeys(playerEntity.Name);
+            foreach (int key in saveKeys)
+            {
+                string name = saveLoadManager.GetSaveInfo(key).saveName;
+                if (name.Contains(permanentSave))
+                {
+                    int life = 0;
+                    if (name != permanentSave)
+                        life = int.Parse(Regex.Match(name, @"\d+").Value);
+                    if (life > maxLives && maxLives != 0)
+                        life = maxLives;
+                    if (life > 0)
+                    {
+                        life--;
+                        saveLoadManager.Rename(key, permanentSave + " " + life.ToString());
+                    }
+                    else
+                    {
+                        Debug.Log("No lives left, deleting Ironman Permanent save.");
+                        saveLoadManager.DeleteSaveFolder(key);
+                    }
+                }
+            }
+        }
+
+        private static void GainLife()
+        {
+            Debug.Log("Counting down life");
+            saveLoadManager.EnumerateSaves();
+            int[] saveKeys = saveLoadManager.GetCharacterSaveKeys(playerEntity.Name);
+            foreach (int key in saveKeys)
+            {
+                string name = saveLoadManager.GetSaveInfo(key).saveName;
+                if (name.Contains(permanentSave))
+                {
+                    int life = maxLives;
+                    if (name != permanentSave)
+                        life = int.Parse(Regex.Match(name, @"\d+").Value);
+                    if (life < maxLives || maxLives == 0)
+                    {
+                        life++;
+                        DaggerfallUI.AddHUDText("Gained one Ironman Life");
+                    }
+                    else
+                        life = maxLives;
+                    saveLoadManager.Rename(key, permanentSave + " " + life.ToString());
+                }
+            }
         }
 
         void MessageReceiver(string message, object data, DFModMessageCallback callBack)

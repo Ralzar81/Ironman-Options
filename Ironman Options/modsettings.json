@@ -60,13 +60,6 @@
             "$version": "v1"
         },
         {
-            "Name": "   ",
-            "Description": null,
-            "IsAdvanced": false,
-            "Keys": [],
-            "$version": "v1"
-        },
-        {
             "Name": "OutsidePermanentSave",
             "Description": null,
             "IsAdvanced": false,
@@ -83,6 +76,66 @@
                     "Description": "When, if ever, should the mod create/update a permanent save that is not deleted on death?",
                     "$version": "v1",
                     "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+            ],
+            "$version": "v1"
+        },
+        {
+            "Name": "PermanentSaveLives",
+            "Description": null,
+            "IsAdvanced": false,
+            "Keys": [
+                {
+                    "Value": false,
+                    "Name": "LivesSystem",
+                    "Description": "Activate a system of extra lives for the ironman permanent saves.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
+                },
+                {
+                    "Options": [
+                    "0",
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "10"
+                    ],
+                    "Value": 0,
+                    "Name": "StartingLives",
+                    "Description": "For each death, the Permanent Save will count down. If you are at 0 and die, the permanent save gets deleted.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+                {
+                    "Options": [
+                    "No limit",
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "10"
+                    ],
+                    "Value": 0,
+                    "Name": "MaxLives",
+                    "Description": "Maximum amount of lives possible to have at once.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.MultipleChoiceKey"
+                },
+                {
+                    "Value": false,
+                    "Name": "LevelUpExtraLife",
+                    "Description": "Each time you level up, you gain one life.",
+                    "$version": "v1",
+                    "$type": "DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings.ToggleKey"
                 },
             ],
             "$version": "v1"

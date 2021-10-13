@@ -1,10 +1,10 @@
 {
     "ModTitle": "Ironman Options",
-    "ModVersion": "1.1.2",
+    "ModVersion": "1.2.1",
     "ModAuthor": "Ralzar",
     "ContactInfo": "www.dfworkshop.net",
-    "DFUnity_Version": "0.12.1",
-    "ModDescription": "If you die, your save is deleted. Optionally, you can have a permanent save that only gets updated when specific conditions are met.",
+    "DFUnity_Version": "0.12.3",
+    "ModDescription": "If you die, your save is deleted. Optionally, you can have a permanent save at specific times. Or even add a extra lives system.",
     "GUID": "dc2e15c5-35f9-4018-aba4-1c0fdac7690e",
     "Files": [
         "Assets/Game/Mods/Ironman Options/IronmanOptions.cs",
